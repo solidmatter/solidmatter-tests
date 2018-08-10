@@ -1,0 +1,92 @@
+#!/usr/bin/env python
+
+import sys
+import os
+from robot.run import run
+from robot import utils
+
+USAGE = """run -- solidmatter framework runner
+
+Usage: run [options]
+
+Options
+=======
+ --testmode               By default, the output files have a suffix based on
+                          the current time. This options disables this suffix.
+                          For more information see -T option on the original
+                          pybot help.
+ -d --outputdir dir       Where to create output files. The given path is
+                          considered relative to that unless it is absolute.
+                          Defaults to the '<toplevel>/output'.
+ -t --test name *         Select test cases to run by name or long name. Name
+                          is case and space insensitive and it can also be
+                          simple pattern where `*` matches anything and `?`
+                          matches any char. If using `*` and `?` in the console
+                          is problematic see --escape and --argumentfile.
+ -s --suite name *        Select test suites to run by name. When this option
+                          is used with --test, --include or --exclude, only
+                          test cases in matching suites and also matching other
+                          filtering criteria are selected. Name can be a simple
+                          pattern similarly as with --test and it can contain
+                          parent name separated with a dot. For example
+                          `-s X.Y` selects suite `Y` only if its parent is `X`.
+ -h -? --help             Print usage instructions.
+"""
+
+topdir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+class Run(utils.Application):
+    def __init__(self):
+        utils.Application.__init__(self, USAGE)
+
+    def _inject_variable(self, name, value):
+        if 'variable' not in self.options:
+            self.options['variable'] = list()
+        variables = self.options['variable']
+        variables.append(name + ':' + value)
+
+    def _inject_variablefile(self):
+        setupfile = os.path.join(topdir, 'bin', 'setup_vars.py')
+        defaultsfile = os.path.join(self.configpath, 'variables')
+        variablefiles = [
+                setupfile + ';' + defaultsfile,
+        ]
+        self.options['variablefile'] = variablefiles
+
+    def _inject_outputdir(self):
+        if not self.options['outputdir']:
+            outputdir = os.path.join(topdir, 'output')
+            self.options['outputdir'] = outputdir
+            if not os.path.exists(outputdir):
+                os.mkdir(outputdir)
+
+    def main(self, args, **options):
+        self.testspath = os.path.join(topdir, 'tests')
+        self.resourcespath = os.path.join(topdir, 'resources')
+        self.configpath = os.path.join(topdir, 'config')
+
+        self.options = options
+
+        if not os.path.exists(self.testspath):
+            print('No valid test dir')
+            return
+
+        if not os.path.exists(self.resourcespath):
+            print('No valid resources dir')
+            return
+
+        if not os.path.exists(self.configpath):
+            print('No valid config dir')
+            return
+
+        self._inject_outputdir()
+        self._inject_variable('RESOURCES', self.resourcespath)
+        self._inject_variablefile()
+
+        return run(self.testspath, **self.options)
+
+def run_cli(args):
+    Run().execute_cli(args)
+
+if __name__ == '__main__':
+    run_cli(sys.argv[1:])

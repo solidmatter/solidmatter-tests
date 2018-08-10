@@ -1,0 +1,238 @@
+*** Settings ***
+Library   Selenium2Library
+Resource  ${RESOURCES}/common.txt
+
+Suite Setup      Suite Setup
+Suite Teardown   Suite Teardown
+Test Setup       Test Setup
+Test Teardown    Test Teardown
+
+
+*** Variables ***
+${browser}    headlesschrome
+
+
+*** Keywords ***
+Suite Setup
+    Open Browser    ${BACKEND_URL}  browser=${browser}
+    Maximize Browser Window
+
+Suite Teardown
+    Close All Browsers
+
+Test Setup
+    [Arguments]  ${url}=${BACKEND_URL}
+    Go To  ${url}
+    Login As  user=${ADMIN_USER}  password=${ADMIN_PASSWORD}
+    Select Frame  name:navigation
+
+Tree Entries Test Setup
+    [Arguments]  ${locator}
+    Test Setup
+    Click Element   ${locator}
+
+Context Menu Test Setup
+    [Arguments]  ${locator}
+    Test Setup
+    Open Context Menu  ${locator}
+    Element Should Be Visible  //*[@id="contextmenu"]
+
+Workbench Test Setup
+    [Arguments]  ${locator}
+    Test Setup
+    Click Element   ${locator}
+    Unselect Frame  #go back to main frame
+    Select Frame  name:main
+
+Workbench Debug View Test Setup
+    [Arguments]  ${locator}
+    Workbench Test Setup  ${locator}
+    Click Element  //span[contains(text(),'Debug')]
+
+Test Teardown
+    Logout
+
+Tree Entries Should Be Present
+    [Arguments]  ${locator}
+    Wait Until Element Is Visible  ${locator}  1 Second
+
+Context Menu Entry Should Be Present
+    [Arguments]  ${locator}  ${text}
+    Element Should Be Visible   ${locator}
+    Element Should Contain      ${locator}  ${text}
+
+Workbench Should Have View
+    [Arguments]  ${viewName}
+    Unselect Frame  #go back to main frame
+    Select Frame  name:main
+    Element Should Be Visible  //span[contains(text(),'${viewName}')]
+
+Workbench Debug View Should Have Entry
+    [Arguments]  ${entryName}
+    ${workbenchElement}=  Get WebElement  //div[contains(@class, 'workbench')]
+    Element Should Contain  ${workbenchElement}   ${entryName}
+
+
+*** Test Cases ***
+Tree Entries - Root
+    [Template]   Tree Entries Should Be Present
+
+    //*[@id="entry:favorites"]
+    //*[@id="entry:jcr_system"]
+    //*[@id="entry:trashcan"]
+
+Tree Entries - sbSystem:Preferences
+    [Setup]  Tree Entries Test Setup  locator=//*[@id="entry:jcr_system"]/a[@class="toggle"]
+    [Template]   Tree Entries Should Be Present
+
+    //*[@id="entry:jcr_system:reports"]
+    //*[@id="entry:jcr_system:users"]
+    //*[@id="entry:jcr_system:modules"]
+    //*[@id="entry:jcr_system:maintenance"]
+
+Tree Entries - sbSystem:Preferences:Reports
+    [Setup]  Tree Entries Test Setup  locator=//*[@id="entry:jcr_system"]/a[@class="toggle"]
+
+    Wait Until Element Is Visible  //*[@id="entry:jcr_system:reports"]/a[@class="toggle"]  1 Second
+    Click Element   //*[@id="entry:jcr_system:reports"]/a[@class="toggle"]
+
+    Tree Entries Should Be Present   //*[@id="entry:jcr_system:reports:reports_db"]
+    Tree Entries Should Be Present   //*[@id="entry:jcr_system:reports:structure"]
+
+Tree Entries - sbSystem:Maintenance
+    [Setup]  Tree Entries Test Setup  locator=//*[@id="entry:jcr_system"]/a[@class="toggle"]
+
+    Wait Until Element Is Visible  //*[@id="entry:jcr_system:reports"]/a[@class="toggle"]  1 Second
+    Click Element   //*[@id="entry:jcr_system:maintenance"]/a[@class="toggle"]
+
+    Tree Entries Should Be Present   //*[@id="entry:jcr_system:maintenance:debug"]
+    Tree Entries Should Be Present   //*[@id="entry:jcr_system:maintenance:logs"]
+    Tree Entries Should Be Present   //*[@id="entry:jcr_system:maintenance:registry"]
+    Tree Entries Should Be Present   //*[@id="entry:jcr_system:maintenance:tags"]
+
+#Tree Entries - sbJukebox:Jukebox
+#    [Setup]  Tree Entries Test Setup  locator=//*[@id="entry:demojukebox"]/a[@class="toggle"]
+#    [Template]   Tree Entries Should Be Present
+#
+#    //*[@id="entry:demojukebox:myplaylist"]
+
+Context Menu - sbSystem:Root
+    [Setup]  Context Menu Test Setup  locator=//html/body/div[5]/ul/li/a
+    [Template]   Context Menu Entry Should Be Present
+
+    //*[@id="contextmenu"]/ul/li[1]  New:
+    # TBD ... sub entries
+    # TBD ... sub entries
+    # TBD ... sub entries
+    //*[@id="contextmenu"]/ul/li[2]  Refresh
+    //*[@id="contextmenu"]/ul/li[3]  Add favorite
+    //*[@id="contextmenu"]/ul/li[4]  Export
+    //*[@id="contextmenu"]/ul/li[5]  Primary
+
+Context Menu - sbSystem:Favorites
+    [Setup]  Context Menu Test Setup  locator=//*[@id=":favorites"]
+    [Template]   Context Menu Entry Should Be Present
+
+    //*[@id="contextmenu"]/ul/li[1]  New:
+    //*[@id="contextmenu"]/ul/li[1]/ul/li/a/span  Favorites Folder
+    //*[@id="contextmenu"]/ul/li[2]  Refresh
+    //*[@id="contextmenu"]/ul/li[3]  Add favorite
+    //*[@id="contextmenu"]/ul/li[4]  Cut
+    //*[@id="contextmenu"]/ul/li[5]  Copy
+    //*[@id="contextmenu"]/ul/li[6]  Export
+    //*[@id="contextmenu"]/ul/li[7]  Primary
+    //*[@id="contextmenu"]/ul/li[8]  Delete
+
+Context Menu - sbSystem:Preferences
+    [Setup]  Context Menu Test Setup  locator=//*[@id=":jcr_system"]
+    [Template]   Context Menu Entry Should Be Present
+
+    //*[@id="contextmenu"]/ul/li[1]  Refresh
+    //*[@id="contextmenu"]/ul/li[2]  Add favorite
+    //*[@id="contextmenu"]/ul/li[3]  Export
+    //*[@id="contextmenu"]/ul/li[4]  Primary
+
+Context Menu - sbSystem:Trashcan
+    [Setup]  Context Menu Test Setup  locator=//*[@id=":trashcan"]
+    [Template]   Context Menu Entry Should Be Present
+
+    //*[@id="contextmenu"]/ul/li[1]  Refresh
+    //*[@id="contextmenu"]/ul/li[2]  Add favorite
+    //*[@id="contextmenu"]/ul/li[3]  Export
+    //*[@id="contextmenu"]/ul/li[4]  Primary
+    //*[@id="contextmenu"]/ul/li[5]  Purge
+
+#Context Menu - sbJukebox:Jukebox
+#    [Setup]  Context Menu Test Setup  locator=//*[@id=":demojukebox"]
+#    [Template]   Context Menu Entry Should Be Present
+#
+#    //*[@id="contextmenu"]/ul/li[1]  New:
+#    //*[@id="contextmenu"]/ul/li[2]  Refresh
+#    //*[@id="contextmenu"]/ul/li[3]  Add favorite
+#    //*[@id="contextmenu"]/ul/li[4]  Cut
+#    //*[@id="contextmenu"]/ul/li[5]  Copy
+#    //*[@id="contextmenu"]/ul/li[6]  Export
+#    //*[@id="contextmenu"]/ul/li[7]  Primary
+#    //*[@id="contextmenu"]/ul/li[8]  Delete
+
+Workbench - sbSystem:Root
+    [Setup]  Workbench Test Setup  locator=//html/body/div[5]/ul/li/a
+    [Template]   Workbench Should Have View
+
+    Welcome
+    List
+    Security
+    Debug
+    XML
+
+Workbench - sbSystem:Root:Debug
+    [Setup]  Workbench Debug View Test Setup  locator=//html/body/div[5]/ul/li/a
+    [Template]   Workbench Debug View Should Have Entry
+
+    Properties
+    Hierarchy
+    Tags
+    LifecycleTransitions
+    Supported Relations
+    Supertypes
+    Views
+    Supported Authorisations
+    User Authorisations
+    Local Authorisations
+    Inherited Authorisations
+
+Workbench - sbSystem:Favorites
+    [Setup]  Workbench Test Setup  locator=//*[@id=":favorites"]
+    [Template]   Workbench Should Have View
+
+    List
+    Security
+    Debug
+    XML
+
+Workbench - sbSystem:Preferences
+    [Setup]  Workbench Test Setup  locator=//*[@id=":jcr_system"]
+    [Template]   Workbench Should Have View
+
+    Security
+    Debug
+    XML
+
+Workbench - sbSystem:Trashcan
+    [Setup]  Workbench Test Setup  locator=//*[@id=":trashcan"]
+    [Template]   Workbench Should Have View
+
+    Content
+    Security
+    Debug
+    XML
+
+#Workbench - sbJukebox:Jukebox
+#    [Setup]  Workbench Test Setup  locator=//*[@id=":demojukebox"]
+#    [Template]   Workbench Should Have View
+#
+#    Administration
+#    Properties
+#    Security
+#    Debug
+#    XML

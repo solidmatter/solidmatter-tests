@@ -1,0 +1,49 @@
+*** Settings ***
+Library   Selenium2Library
+Resource  ${RESOURCES}/common.txt
+
+Suite Setup      Suite Setup
+Suite Teardown   Suite Teardown
+Test Setup       Login Test Setup
+Test Teardown    Login Test Teardown
+
+
+*** Variables ***
+${browser}    headlesschrome
+
+
+*** Keywords ***
+Suite Setup
+    Open Browser    ${BACKEND_URL}  browser=${browser}
+    Maximize Browser Window
+
+Suite Teardown
+    Close All Browsers
+
+Login Test Setup
+    [Arguments]  ${url}=${BACKEND_URL}
+    Go To  ${url}
+
+Login Test Teardown
+    Logout
+
+
+*** Test Cases ***
+Login With Correct Password
+    Login As  user=${ADMIN_USER}  password=${ADMIN_PASSWORD}
+    Capture Page Screenshot
+
+Login With Wrong Password
+    Login As  user=${ADMIN_USER}  password=wrong
+    Page Should Contain  Login or password wrong
+    Capture Page Screenshot
+
+Login With Short Password
+    Login As  user=${ADMIN_USER}  password=${ADMIN_PASSWORD[:-1]}
+    Page Should Contain  Input too short
+    Capture Page Screenshot
+
+Login With Long Password
+    Login As  user=${ADMIN_USER}  password=${ADMIN_PASSWORD}12
+    Page Should Contain  Login or password wrong
+    Capture Page Screenshot

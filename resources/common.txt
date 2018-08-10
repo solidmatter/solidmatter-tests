@@ -1,0 +1,12 @@
+*** Keywords ***
+Login As
+    [Arguments]  ${user}  ${password}
+    Location Should Be  ${BACKEND_URL}/-/login/-/
+    Input Text  name:login  ${user}
+    Input Text  name:password  ${password}
+    Click Button  name:submit
+
+Logout
+    Go To  ${BACKEND_URL}/-/login/logout
+    Location Should Be  ${BACKEND_URL}/-/login/-/
+
