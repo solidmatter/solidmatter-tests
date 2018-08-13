@@ -1,4 +1,6 @@
 [Variables]
+BROWSER: headlesschrome
+#BROWSER: headlessfirefox
 BACKEND_URL:
 ADMIN_USER:
 ADMIN_PASSWORD:
