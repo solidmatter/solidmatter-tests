@@ -1,5 +1,5 @@
 *** Settings ***
-Library   Selenium2Library
+Library   SeleniumLibrary
 Resource  ${RESOURCES}/common.txt
 
 Suite Setup      Suite Setup
@@ -9,13 +9,12 @@ Test Teardown    Login Test Teardown
 
 
 *** Variables ***
-${browser}    headlesschrome
 
 
 *** Keywords ***
 Suite Setup
-    Open Browser    ${BACKEND_URL}  browser=${browser}
-    Maximize Browser Window
+    Open Browser    ${BACKEND_URL}  browser=${BROWSER}
+#:    Maximize Browser Window
 
 Suite Teardown
     Close All Browsers

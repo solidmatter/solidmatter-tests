@@ -1,5 +1,5 @@
 *** Settings ***
-Library   Selenium2Library
+Library   SeleniumLibrary
 Resource  ${RESOURCES}/common.txt
 
 Suite Setup      Suite Setup
@@ -9,13 +9,12 @@ Test Teardown    Test Teardown
 
 
 *** Variables ***
-${browser}    headlesschrome
 
 
 *** Keywords ***
 Suite Setup
-    Open Browser    ${BACKEND_URL}  browser=${browser}
-    Maximize Browser Window
+    Open Browser    ${BACKEND_URL}  browser=${BROWSER}
+#    Maximize Browser Window
 
 Suite Teardown
     Close All Browsers
@@ -72,8 +71,76 @@ Workbench Debug View Should Have Entry
     ${workbenchElement}=  Get WebElement  //div[contains(@class, 'workbench')]
     Element Should Contain  ${workbenchElement}   ${entryName}
 
+Is Checkbox Selected
+    [Arguments]  ${locator}
+    [Return]  ${value}
+    ${element}=  Get WebElement  ${locator}
+    Log  ${element}
+    ${value}=  Get Element Attribute  ${element}  attribute=checked
+    ${value}=  Set Variable If  '${value}' == 'true'  ${TRUE}  ${FALSE}
+
+Click Element When Is Visible
+    [Arguments]  ${locator}  ${timeout}=5 Seconds
+    Wait Until Element Is Visible  ${locator}  ${timeout}
+    Click Element  ${locator}
+
+Navigate To Tree Element
+    [Arguments]  @{elements}
+    :FOR  ${element}  IN  @{elements}
+    \  Click Element When Is Visible  ${element}
+
+Open Tree To jcr_system:maintenance
+    Unselect Frame  #go back to main frame
+    Select Frame  name:navigation
+    Navigate To Tree Element
+    ...  //*[@id="entry:jcr_system"]/a[@class="toggle"]
+    ...  //*[@id="entry:jcr_system:maintenance"]/a[@class="toggle"]
+
+Close Tree from jcr_system:maintenance
+    Unselect Frame  #go back to main frame
+    Select Frame  name:navigation
+    Navigate To Tree Element
+    ...  //*[@id="entry:jcr_system:maintenance"]/a[@class="toggle"]
+    ...  //*[@id="entry:jcr_system"]/a[@class="toggle"]
+
+Open Registry
+    Navigate To Tree Element
+    ...  //*[@id=":jcr_system:maintenance:registry"]
+
+    # switch frame
+    Unselect Frame  #go back to main frame
+    Select Frame  name:main
+
+    Wait Until Element Is Visible  //span[contains(text(),'Edit')]
+    Click Element  //span[contains(text(),'Edit')]
+
+Click Registry Checkbox And Save
+    [Arguments]  ${element}
+    Set Focus to Element  ${element}
+    Click Element    ${element}
+    Click Element    //*[@value="Save"]
+
+Enable Debug Menu In Registry
+    Open Tree To jcr_system:maintenance
+    Open Registry
+    Wait Until Element Is Visible  //*[@for="sb_system_debug_menu_debugmode"]  5 Seconds
+    ${enabled}=  Is Checkbox Selected  //*[@id="sb_system_debug_menu_debugmode"]
+    Run Keyword If  '${enabled}' != '${TRUE}'  Click Registry Checkbox And Save  //*[@for="sb_system_debug_menu_debugmode"]
+    Close Tree from jcr_system:maintenance
+
+Disable Debug Menu In Registry
+    Open Tree To jcr_system:maintenance
+    Open Registry
+    Wait Until Element Is Visible  //*[@for="sb_system_debug_menu_debugmode"]  5 Seconds
+    ${enabled}=  Is Checkbox Selected  //*[@id="sb_system_debug_menu_debugmode"]
+    Run Keyword If  '${enabled}' != '${FALSE}'  Click Registry Checkbox And Save  //*[@for="sb_system_debug_menu_debugmode"]
+    Close Tree from jcr_system:maintenance
 
 *** Test Cases ***
+Test
+    Enable Debug Menu In Registry
+    Disable Debug Menu In Registry
+
 Tree Entries - Root
     [Template]   Tree Entries Should Be Present
 
@@ -82,39 +149,28 @@ Tree Entries - Root
     //*[@id="entry:trashcan"]
 
 Tree Entries - sbSystem:Preferences
-    [Setup]  Tree Entries Test Setup  locator=//*[@id="entry:jcr_system"]/a[@class="toggle"]
-    [Template]   Tree Entries Should Be Present
-
-    //*[@id="entry:jcr_system:reports"]
-    //*[@id="entry:jcr_system:users"]
-    //*[@id="entry:jcr_system:modules"]
-    //*[@id="entry:jcr_system:maintenance"]
+    Navigate To Tree Element
+    ...  //*[@id="entry:jcr_system"]/a[@class="toggle"]
+    Tree Entries Should Be Present  //*[@id="entry:jcr_system:reports"]
+    Tree Entries Should Be Present  //*[@id="entry:jcr_system:users"]
+    Tree Entries Should Be Present  //*[@id="entry:jcr_system:modules"]
+    Tree Entries Should Be Present  //*[@id="entry:jcr_system:maintenance"]
 
 Tree Entries - sbSystem:Preferences:Reports
-    [Setup]  Tree Entries Test Setup  locator=//*[@id="entry:jcr_system"]/a[@class="toggle"]
-
-    Wait Until Element Is Visible  //*[@id="entry:jcr_system:reports"]/a[@class="toggle"]  1 Second
-    Click Element   //*[@id="entry:jcr_system:reports"]/a[@class="toggle"]
-
+    Navigate To Tree Element
+    ...  //*[@id="entry:jcr_system"]/a[@class="toggle"]
+    ...  //*[@id="entry:jcr_system:reports"]/a[@class="toggle"]
     Tree Entries Should Be Present   //*[@id="entry:jcr_system:reports:reports_db"]
     Tree Entries Should Be Present   //*[@id="entry:jcr_system:reports:structure"]
 
-Tree Entries - sbSystem:Maintenance
-    [Setup]  Tree Entries Test Setup  locator=//*[@id="entry:jcr_system"]/a[@class="toggle"]
-
-    Wait Until Element Is Visible  //*[@id="entry:jcr_system:reports"]/a[@class="toggle"]  1 Second
-    Click Element   //*[@id="entry:jcr_system:maintenance"]/a[@class="toggle"]
-
+Tree Entries - sbSystem:Preferences:Maintenance
+    Navigate To Tree Element
+    ...  //*[@id="entry:jcr_system"]/a[@class="toggle"]
+    ...  //*[@id="entry:jcr_system:maintenance"]/a[@class="toggle"]
     Tree Entries Should Be Present   //*[@id="entry:jcr_system:maintenance:debug"]
     Tree Entries Should Be Present   //*[@id="entry:jcr_system:maintenance:logs"]
     Tree Entries Should Be Present   //*[@id="entry:jcr_system:maintenance:registry"]
     Tree Entries Should Be Present   //*[@id="entry:jcr_system:maintenance:tags"]
-
-#Tree Entries - sbJukebox:Jukebox
-#    [Setup]  Tree Entries Test Setup  locator=//*[@id="entry:demojukebox"]/a[@class="toggle"]
-#    [Template]   Tree Entries Should Be Present
-#
-#    //*[@id="entry:demojukebox:myplaylist"]
 
 Context Menu - sbSystem:Root
     [Setup]  Context Menu Test Setup  locator=//html/body/div[5]/ul/li/a
@@ -161,19 +217,6 @@ Context Menu - sbSystem:Trashcan
     //*[@id="contextmenu"]/ul/li[3]  Export
     //*[@id="contextmenu"]/ul/li[4]  Primary
     //*[@id="contextmenu"]/ul/li[5]  Purge
-
-#Context Menu - sbJukebox:Jukebox
-#    [Setup]  Context Menu Test Setup  locator=//*[@id=":demojukebox"]
-#    [Template]   Context Menu Entry Should Be Present
-#
-#    //*[@id="contextmenu"]/ul/li[1]  New:
-#    //*[@id="contextmenu"]/ul/li[2]  Refresh
-#    //*[@id="contextmenu"]/ul/li[3]  Add favorite
-#    //*[@id="contextmenu"]/ul/li[4]  Cut
-#    //*[@id="contextmenu"]/ul/li[5]  Copy
-#    //*[@id="contextmenu"]/ul/li[6]  Export
-#    //*[@id="contextmenu"]/ul/li[7]  Primary
-#    //*[@id="contextmenu"]/ul/li[8]  Delete
 
 Workbench - sbSystem:Root
     [Setup]  Workbench Test Setup  locator=//html/body/div[5]/ul/li/a
@@ -226,13 +269,3 @@ Workbench - sbSystem:Trashcan
     Security
     Debug
     XML
-
-#Workbench - sbJukebox:Jukebox
-#    [Setup]  Workbench Test Setup  locator=//*[@id=":demojukebox"]
-#    [Template]   Workbench Should Have View
-#
-#    Administration
-#    Properties
-#    Security
-#    Debug
-#    XML
